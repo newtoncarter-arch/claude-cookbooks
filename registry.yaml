@@ -432,6 +432,18 @@
   categories:
   - Responses
   - RAG & Retrieval
+- title: 'Risk-first trading assistant: Claude proposes, code enforces'
+  description: Wrap a rule-heavy trading prompt in deterministic guardrails. Code computes
+    indicators and checks data, circuit breakers run before the model, structured outputs
+    fix the response shape, and a risk engine resizes, rejects, or force-exits trades
+    and fails closed.
+  path: misc/risk_first_trading_assistant.ipynb
+  authors:
+  - newtoncarter-arch
+  date: '2026-09-27'
+  categories:
+  - Agent Patterns
+  - Responses
 - title: Best practices for using vision with Claude
   description: Tips and techniques for optimal image processing performance with Claude's
     vision capabilities.
