@@ -1,0 +1,9 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+# Runtime output
+logs/
+data_cache/
+reports/
+KILL

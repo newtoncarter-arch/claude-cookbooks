@@ -1,0 +1,32 @@
+# Trading bot configuration. Secrets do NOT go here; they go in .env.
+
+[general]
+# "paper" (default) or "live". Live ALSO requires an interactive typed
+# confirmation at startup, so it can never switch on silently.
+mode = "paper"
+broker = "alpaca"
+symbols = ["SPY"]
+timezone = "America/New_York"
+
+[data]
+bar_timeframe = "5Min"   # "1Min" or "5Min"
+feed = "iex"             # "iex" is free on Alpaca; "sip" is the paid consolidated feed
+# If no new bar arrives for this many seconds during market hours, the feed
+# counts as stale. The bot then stops opening new trades and sends an alert.
+stale_after_seconds = 180
+
+[risk]
+# Placeholder values until Stage 4. Loading the config fails if any limit is missing.
+risk_per_trade_pct = 0.5
+max_daily_loss_pct = 2.0
+max_open_positions = 1
+max_position_pct = 25.0
+flatten_minutes_before_close = 15
+account_type = "cash"          # "cash" or "margin"
+# Max day trades per rolling 5 business days. 0 = no limit. See README
+# ("Account rules"); the right value depends on your broker's current policy.
+max_day_trades_per_5d = 0
+
+[logging]
+dir = "logs"
+kill_switch_file = "KILL"   # create this file to cancel everything and flatten
