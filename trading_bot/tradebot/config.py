@@ -42,6 +42,15 @@ class RiskConfig:
 
 
 @dataclass(frozen=True)
+class UniverseConfig:
+    min_price: float
+    min_avg_dollar_volume: float
+    lookback_days: int
+    watchlist_size: int
+    benchmark: str
+
+
+@dataclass(frozen=True)
 class StrategyConfig:
     name: str
     range_minutes: int
@@ -52,13 +61,13 @@ class StrategyConfig:
 class Config:
     mode: str
     broker: str
-    symbols: tuple[str, ...]
     timezone: str
     bar_timeframe: str
     feed: str
     stale_after_seconds: int
     risk: RiskConfig
     strategy: StrategyConfig
+    universe: UniverseConfig
     log_dir: str
     kill_switch_file: str
 
@@ -77,7 +86,8 @@ def _reject_secrets(d: dict, path: str = "") -> None:
 
 def parse_config(raw: dict) -> Config:
     _reject_secrets(raw)
-    g, d, r, lg, st = (raw.get(s, {}) for s in ("general", "data", "risk", "logging", "strategy"))
+    sections = ("general", "data", "risk", "logging", "strategy", "universe")
+    g, d, r, lg, st, u = (raw.get(s, {}) for s in sections)
 
     mode = g.get("mode", "paper")
     if mode not in VALID_MODES:
@@ -109,16 +119,24 @@ def parse_config(raw: dict) -> Config:
     if strategy.name != "orb":
         raise ConfigError(f"unknown strategy {strategy.name!r}")
 
+    universe = UniverseConfig(
+        min_price=float(u.get("min_price", 5.0)),
+        min_avg_dollar_volume=float(u.get("min_avg_dollar_volume", 20_000_000)),
+        lookback_days=int(u.get("lookback_days", 20)),
+        watchlist_size=int(u.get("watchlist_size", 5)),
+        benchmark=u.get("benchmark", "SPY"),
+    )
+
     return Config(
         mode=mode,
         broker=g.get("broker", "alpaca"),
-        symbols=tuple(g.get("symbols", ["SPY"])),
         timezone=g.get("timezone", "America/New_York"),
         bar_timeframe=d.get("bar_timeframe", "5Min"),
         feed=d.get("feed", "iex"),
         stale_after_seconds=int(d.get("stale_after_seconds", 180)),
         risk=risk,
         strategy=strategy,
+        universe=universe,
         log_dir=lg.get("dir", "logs"),
         kill_switch_file=lg.get("kill_switch_file", "KILL"),
     )
@@ -142,7 +160,7 @@ def confirm_mode(
             "Live mode needs a typed confirmation from an interactive terminal. Refusing to start."
         )
     print("\n*** LIVE TRADING: real money will be at risk. ***")
-    print(f"Broker: {cfg.broker} | Symbols: {', '.join(cfg.symbols)}")
+    print(f"Broker: {cfg.broker} | Universe: filtered US stocks/ETFs")
     answer = input_fn(f'Type exactly "{LIVE_CONFIRMATION_PHRASE}" to continue: ')
     if answer.strip() != LIVE_CONFIRMATION_PHRASE:
         raise LiveTradingNotConfirmed("Confirmation phrase did not match. Not starting.")

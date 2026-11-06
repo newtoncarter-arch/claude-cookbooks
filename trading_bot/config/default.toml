@@ -5,7 +5,6 @@
 # confirmation at startup, so it can never switch on silently.
 mode = "paper"
 broker = "alpaca"
-symbols = ["SPY"]
 timezone = "America/New_York"
 
 [data]
@@ -14,6 +13,16 @@ feed = "iex"             # "iex" is free on Alpaca; "sip" is the paid consolidat
 # If no new bar arrives for this many seconds during market hours, the feed
 # counts as stale. The bot then stops opening new trades and sends an alert.
 stale_after_seconds = 180
+
+[universe]
+# Rules fixed in advance. max price is NOT set here: it is computed as
+# equity x risk.max_position_pct, so one whole share always fits the cap
+# ($150 x 25% = $37.50 today). It rises automatically as the account grows.
+min_price = 5.0
+min_avg_dollar_volume = 20_000_000
+lookback_days = 20
+watchlist_size = 5
+benchmark = "SPY"
 
 [strategy]
 name = "orb"

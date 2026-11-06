@@ -38,7 +38,9 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     confirm_mode(cfg)
-    print(f"Config OK. Mode: {cfg.mode.upper()} | broker: {cfg.broker} | symbols: {cfg.symbols}")
+    print(
+        f"Config OK. Mode: {cfg.mode.upper()} | broker: {cfg.broker} | strategy: {cfg.strategy.name}"
+    )
 
 
 if __name__ == "__main__":

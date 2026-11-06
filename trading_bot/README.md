@@ -13,22 +13,31 @@
 Tunable parameter: `range_minutes` (30). Fixed in advance: stop at the range low, 15:00 entry cutoff.
 Half-days (13:00 close) will be skipped entirely via the exchange calendar (Stage 3).
 
+### Which stocks (`data/universe.py`, `strategy/universe_orb.py`)
+1. **Before the open:** eligible = exchange-listed, tradable, not leveraged/inverse, and over the previous 20 days: last close of at least $5 and at most **equity x max position %** ($150 x 25% = **$37.50**), with average daily traded value of at least $20M. Only data from *before* today is used.
+2. **At 10:00:** rank eligible stocks by opening relative volume (today's 09:30–10:00 volume divided by its 20-day average). The top 5 form the watchlist. Ties are broken alphabetically.
+3. The ORB rules run on each watchlist stock. Every breakout is a *candidate*, and the risk module (Stage 4) decides which to take: max 1 open position, a $0.75 risk budget, whole shares only.
+
+Fixed in advance, not tuned: $5 floor, $20M liquidity, 20-day lookback, watchlist of 5. Changing them after seeing backtest results would be overfitting.
+
 ## Assumptions (please confirm or change)
 
 | Setting | Assumed | Why |
 |---|---|---|
 | Broker | **Alpaca** | Free paper account, official Python SDK (`alpaca-py`), commission-free US stocks and ETFs, and bracket orders, so the stop-loss sits at the broker. |
-| Market | **US ETFs (SPY to start)** | Liquid with tight spreads, and a single ETF has no survivorship-bias problem. |
+| Market | **Filtered US stocks and ETFs** (decided) | Exchange-listed, $5 to (equity x 25%), at least $20M/day average traded value, no OTC, no leveraged/inverse ETFs. SPY is the benchmark. |
 | Capital | **$150** | Below the price of one SPY share. See "Capital problem" below. |
 | Account | **cash** | Safest default (see below). |
 | Runs on | **laptop** | Fine for paper trading. A small cloud VM is better for live trading. |
 | Level | **beginner** | Explanations are written at that level. |
 
-## Capital problem ($150), decision needed before Stage 4
+## Capital ($150): what it means
 
-- One SPY share costs more than the whole account, so trading SPY means fractional shares. Alpaca does not support bracket orders on fractional quantities, and whether a standalone broker-side stop is accepted on a fractional position has to be verified in paper. If it isn't, the "stop-loss at the broker" rule can't be met with SPY.
-- The limits as configured: 0.5% risk = **$0.75 per trade**, 25% max position = **$37.50**, 2% daily loss = **$3**.
-- Even an optimistic +10%/year is about **$15/year**. Any paid data feed or cloud server costs more than the bot could earn. At this size the bot is a learning project, not an income source.
+- **Decided:** whole shares only, so the stop-loss is always held at the broker. Max position stays at 25%, so only stocks priced $5–$37.50 qualify.
+- **Expect many trades to be rejected.** Stocks that are "in play" often have opening ranges of 3–8%. On a $30 stock that's $0.90–$2.40 of risk for one share, above the $0.75 (0.5%) budget. The risk module will skip those, and the backtest will report how often that happens.
+- **Low-priced stocks have proportionally wider spreads.** One cent on a $10 stock is 0.1%, ten times more than on SPY. The cost model in Stage 3 must reflect that.
+- **Dollar outcomes are tiny:** about $0.75 risked per trade and $3 max daily loss. Treat this as a learning project.
+- **Survivorship bias is now a real issue.** A stock universe can only be backtested honestly with data that includes delisted companies. Alpaca's free data may not include them. I'll check in Stage 3, and if it doesn't, I'll tell you and say what a proper dataset costs.
 
 ## Account rules (checked November 2026)
 
@@ -72,6 +81,9 @@ trading_bot/
 │   ├── models.py              # Bar, Signal, OrderRequest, Position, Account
 │   ├── config.py              # loading, validation, paper/live gate
 │   ├── main.py                # CLI: check, kill (run/backtest later)
+│   ├── strategy/orb.py        # single-stock ORB rules
+│   ├── strategy/universe_orb.py # daily watchlist + ORB across stocks
+│   ├── data/universe.py       # which stocks are eligible each day
 │   ├── data/base.py           # MarketDataProvider interface
 │   ├── strategy/base.py       # Strategy interface
 │   ├── risk/base.py           # RiskManager interface + kill-switch check
