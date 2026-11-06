@@ -15,6 +15,11 @@ feed = "iex"             # "iex" is free on Alpaca; "sip" is the paid consolidat
 # counts as stale. The bot then stops opening new trades and sends an alert.
 stale_after_seconds = 180
 
+[strategy]
+name = "orb"
+range_minutes = 30       # the one tunable parameter
+entry_cutoff = "15:00"   # fixed in advance: no new entries after this time (ET)
+
 [risk]
 # Placeholder values until Stage 4. Loading the config fails if any limit is missing.
 risk_per_trade_pct = 0.5

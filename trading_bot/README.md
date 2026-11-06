@@ -1,6 +1,17 @@
 # tradebot: a paper-first intraday trading bot
 
-**Status: Stage 1 (architecture) is ready for review.** No strategy, backtester, or order code exists yet.
+**Status:** Stage 1 approved. Stage 2 (Opening Range Breakout strategy) is ready for review. No backtester or order code exists yet.
+
+## Strategy: Opening Range Breakout (long-only), `tradebot/strategy/orb.py`
+
+1. **Opening range:** the high and low of the 5-min bars starting 09:30–09:55 ET. If any of those bars is missing, the day is skipped.
+2. **Entry:** the *first* later bar that closes strictly above the range high, and ends by 15:00, triggers a buy at the next bar's open.
+3. **Stop:** the range low, held at the broker.
+4. **Exit:** the stop, or the end-of-day flatten (risk module, Stage 4).
+5. **One signal per day:** no re-entry after a stop-out. This is worked out from today's bars, not stored state, so a restart can't cause a second entry.
+
+Tunable parameter: `range_minutes` (30). Fixed in advance: stop at the range low, 15:00 entry cutoff.
+Half-days (13:00 close) will be skipped entirely via the exchange calendar (Stage 3).
 
 ## Assumptions (please confirm or change)
 
@@ -8,10 +19,16 @@
 |---|---|---|
 | Broker | **Alpaca** | Free paper account, official Python SDK (`alpaca-py`), commission-free US stocks and ETFs, and bracket orders, so the stop-loss sits at the broker. |
 | Market | **US ETFs (SPY to start)** | Liquid with tight spreads, and a single ETF has no survivorship-bias problem. |
-| Capital | **unknown** | Needed for Stage 4 sizing. With very small accounts, whole-share rounding breaks percentage-risk rules. |
+| Capital | **$150** | Below the price of one SPY share. See "Capital problem" below. |
 | Account | **cash** | Safest default (see below). |
 | Runs on | **laptop** | Fine for paper trading. A small cloud VM is better for live trading. |
 | Level | **beginner** | Explanations are written at that level. |
+
+## Capital problem ($150), decision needed before Stage 4
+
+- One SPY share costs more than the whole account, so trading SPY means fractional shares. Alpaca does not support bracket orders on fractional quantities, and whether a standalone broker-side stop is accepted on a fractional position has to be verified in paper. If it isn't, the "stop-loss at the broker" rule can't be met with SPY.
+- The limits as configured: 0.5% risk = **$0.75 per trade**, 25% max position = **$37.50**, 2% daily loss = **$3**.
+- Even an optimistic +10%/year is about **$15/year**. Any paid data feed or cloud server costs more than the bot could earn. At this size the bot is a learning project, not an income source.
 
 ## Account rules (checked November 2026)
 

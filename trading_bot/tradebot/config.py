@@ -42,6 +42,13 @@ class RiskConfig:
 
 
 @dataclass(frozen=True)
+class StrategyConfig:
+    name: str
+    range_minutes: int
+    entry_cutoff: str  # "HH:MM" Eastern
+
+
+@dataclass(frozen=True)
 class Config:
     mode: str
     broker: str
@@ -51,6 +58,7 @@ class Config:
     feed: str
     stale_after_seconds: int
     risk: RiskConfig
+    strategy: StrategyConfig
     log_dir: str
     kill_switch_file: str
 
@@ -69,7 +77,7 @@ def _reject_secrets(d: dict, path: str = "") -> None:
 
 def parse_config(raw: dict) -> Config:
     _reject_secrets(raw)
-    g, d, r, lg = (raw.get(s, {}) for s in ("general", "data", "risk", "logging"))
+    g, d, r, lg, st = (raw.get(s, {}) for s in ("general", "data", "risk", "logging", "strategy"))
 
     mode = g.get("mode", "paper")
     if mode not in VALID_MODES:
@@ -93,6 +101,14 @@ def parse_config(raw: dict) -> Config:
     if d.get("bar_timeframe", "5Min") not in {"1Min", "5Min"}:
         raise ConfigError("data.bar_timeframe must be '1Min' or '5Min'")
 
+    strategy = StrategyConfig(
+        name=st.get("name", "orb"),
+        range_minutes=int(st.get("range_minutes", 30)),
+        entry_cutoff=st.get("entry_cutoff", "15:00"),
+    )
+    if strategy.name != "orb":
+        raise ConfigError(f"unknown strategy {strategy.name!r}")
+
     return Config(
         mode=mode,
         broker=g.get("broker", "alpaca"),
@@ -102,6 +118,7 @@ def parse_config(raw: dict) -> Config:
         feed=d.get("feed", "iex"),
         stale_after_seconds=int(d.get("stale_after_seconds", 180)),
         risk=risk,
+        strategy=strategy,
         log_dir=lg.get("dir", "logs"),
         kill_switch_file=lg.get("kill_switch_file", "KILL"),
     )
